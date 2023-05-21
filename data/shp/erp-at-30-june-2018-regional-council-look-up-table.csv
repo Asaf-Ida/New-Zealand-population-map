@@ -1,0 +1,22 @@
+column names,Description
+erpyy,"estimated resident population at 30 June yyyy, eg. erp96 =  estimated reisdent population at 30 June 1996"
+a0014,count of people who are aged between 0 and 14 years old at 30 June 2018
+a1539 ,count of people who are aged between 15 and 39 years old at 30 June 2018
+a4064,count of people who are aged between 40 and 64 years old at 30 June 2018
+a6500,count of people who are aged 65 years and over at 30 June 2018
+p0014,proportion of people who are aged between 0 and 14 years old at 30 June 2018
+p1539,proportion of people who are aged between 15 and 39 years old at 30 June 2018
+p4064,proportion of people who are aged between 40 and 64 years old at 30 June 2018
+p6500,proportion of people who are aged 65 years and over at 30 June 2018
+median_age,"half population are younger, and older, than this age"
+sex_ratio,number of males per 100 females at 30 June 2018
+Eurother, count of people who are European or Other at 30 June 2018
+Maori,count of people who are Maori at 30 June 2018
+Pacific,count of people who are Pacific at 30 June 2018
+Asian,count of people who are Asian at 30 June 2018
+MELAA,count of people who are MELAA (Middle Eastern/Latin American/African) at 30 June 2018
+pEurother,proportion of people who are European or Other at 30 June 2018
+pMaori,proportion of people who are M?ori at 30 June 2018
+pPacific,proportion of people who are Pacific at 30 June 2018
+pAsian,proportion of people who are Asian at 30 June 2018
+pMELAA,proportion of people who are MELAA (Middle Eastern/Latin American/African) at 30 June 2018

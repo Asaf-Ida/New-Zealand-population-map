@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Zealand population map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="css/leaflet.css">
+    <script src="js/leaflet.js"></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            margin: auto;
+            display: block;
+        }
+        .info h4 {
+            margin: 0 0 5px;
+            color: #777777;
+            text-align: center;
+        }
+        .info #current_feature {
+            margin: 6px 0;
+        }
+        .popup {
+            text-align: center;
+        }        
+        .legend {
+            padding: 6px 8px;
+            background-color: rgba(255,255,255,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+        }
+        .legend div {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        div.legend.leaflet-control br {
+            clear: both;
+        }
+        .description {
+            width: 340px;
+            margin: auto;
+            display: block;
+            font-size: 16px;
+            color: #333333;
+            font-family: "Open Sans", Helvetica, sans-serif;
+            padding: 10px 14px;
+            background-color: rgba(245,245,220,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            border: 1px solid grey;
+        }
+        #small_font {
+            font-size: 14px;
+            color: #777777;
+        }
+        .highlight {
+            background-color: rgba(57, 41, 196, 0.705);
+            font-weight: bold;
+        }
+        .selection {
+            width: 250px;
+            margin: auto;
+            display: block;
+            font-size: 16px;
+            color: #333333;
+            font-family: "Open Sans", Helvetica, sans-serif;
+            padding: 10px 14px;
+            background-color: rgba(207, 127, 127, 0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            border: 1px solid grey;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <ul id="statlist"></ul>
+    <script>
+// Map    
+let map = L.map("map").setView([-41, 174], 6);
+
+// Basemap
+L.tileLayer("https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attribution/">CartoDB</a>',
+            subdomains: "abcd",
+            maxZoom: 19
+            }).addTo(map);
+
+// Information box
+let info = L.control({position: "topright"});
+info.onAdd = function() {
+    let div = L.DomUtil.create("div", "info");
+    div.innerHTML = '<h4>General statisticks</h4><p id="current_feature"></p>';
+    return div;
+};
+info.addTo(map);
+
+let html = "";
+let geojson;
+let breaks = [0, 50000, 150000, 300000, 450000, 1000000, Infinity]
+let colors = ['#edf8fb','#ccece6','#99d8c9','#66c2a4','#2ca25f','#006d2c'];
+
+function stat_color(d) {
+    for(let i = 0; i < breaks.length; i++) {
+        if(d > breaks[i] && d <= breaks[i+1]) {
+            return colors[i];
+        }        
+    }
+}
+
+function stat_style(feature) {
+    return {
+        weight: 0.5,
+        opacity: 1,
+        color: "black",
+        fillColor: stat_color(feature.properties.erp18),
+        fillOpacity: 0.8
+    };
+}
+
+let highlightStyle = {
+    color: "red",
+    fillColor: "red",
+    weight: 5,
+    opacity: 1,
+    fillOpacity: 0.5
+};
+
+// function to add thousend saparetor by commas 
+function format_number(num) {
+    return num
+        .toString()
+        .replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+}
+
+let info_p = document.getElementById("current_feature");
+
+function highlight_feature(e) {
+    e.target.setStyle(highlightStyle);
+    e.target.bringToFront();
+    info_p.innerHTML =
+        'Regional Council: ' + e.target.feature.properties.REGC2020_1 + "<br>" + 
+        'Number of residents: ' + format_number(e.target.feature.properties.erp18) + "<br>" + 
+        'Median age: ' + e.target.feature.properties.median_age + "<br>" + 
+        'Maori residents: ' + format_number(e.target.feature.properties.Maori) + "<br>" + 
+        'Maori residents in percentage: ' + e.target.feature.properties.pMaori + '%';
+}
+
+function highlight_feature_list(e) {
+    e.setStyle(highlightStyle);
+    e.bringToFront();
+    info_p.innerHTML =
+        'Regional Council: ' + e.feature.properties.REGC2020_1 + "<br>" + 
+        'Number of residents: ' + format_number(e.feature.properties.erp18) + "<br>" + 
+        'Median age: ' + e.feature.properties.median_age + "<br>" + 
+        'Maori residents: ' + format_number(e.feature.properties.Maori) + "<br>" + 
+        'Maori residents in percentage: ' + e.feature.properties.pMaori + '%';
+}
+
+function reset_highlight(e) {
+    geojson.resetStyle(e.target);
+    info_p.innerHTML = "";
+}
+
+function reset_highlight_list(e) {
+    geojson.resetStyle(e);
+    info_p.innerHTML = "";
+}
+
+// Create Leaflet control object for legend
+let legend = L.control({position: "topleft"});
+
+// Function that runs when legend is added to map
+legend.onAdd = function() {
+
+    // Create <div> element and populate it with HTML
+    let div = L.DomUtil.create("div", "legend");        
+    div.innerHTML = 
+        '<h3>population counts</h3>based on Regional Council<br>' +
+        '<small>NZ census statistics 2018</small><br>';
+        for(let i = 0; i < breaks.length-2; i++) {
+        div.innerHTML += 
+          '<div style="background-color: ' + colors[i] + '"></div>' + 
+          format_number(breaks[i]) + ' - ' + format_number(breaks[i+1]) + '<br>';
+        }
+        div.innerHTML += '<div style="background-color: ' + colors[5] + '"></div>Over 1,000,000';
+        // Return the legend <div> containing the HTML content
+        return div;
+        };
+        // Add Legend to Map
+        legend.addTo(map);
+
+// add a description to the map
+let description = L.control({position: "bottomleft"});
+description.onAdd = function() {
+    let div = L.DomUtil.create("div", "description");
+    div.innerHTML = 
+        '<h3>Estimated resident population map</h3><hr>' +
+        '<p><b>Summary</b></p>' +
+        'A web map created to show the 2018 census population counts ' +
+        'based on Regional Council, Territorial Authority and Auckland Local Boards, Statistical Area 2 and Urban Area levels.<br><br>' +
+        '<div id="small_font">Click on the map to activate a pop up with more information.<br>' +
+        '<i>Created with the Leaflet library.</i></div><br>' +
+        '<hr><h4>Map author: Asaf Ida</h4>' + 
+        '<img src="https://www.arcgis.com/sharing/rest/content/items/77df9a3c118145f4b0caa262f856d222/resources/StatsNZLogo_new.PNG?v=1681574113443" height=60px width= 130px>';
+        // Return the description 'div' containing the HTML content
+    return div;
+            };
+            description.addTo(map); 
+
+// Consume data through specific file  
+let path = "/data/geojson/nz_popbyregion2018_simplify4.geojson"
+fetch(path)
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(data) {
+        geojson = L.geoJSON(data, {
+            style: stat_style,
+            onEachFeature: function(feature, layer) {
+                let name_reg = feature.properties.REGC2020_1;
+                html += '<li id="' + name_reg + '">' + name_reg + '</li>';
+                layer._leaflet_id = name_reg;
+                layer.addEventListener("mouseover", highlight_feature);
+                layer.addEventListener("mouseout", reset_highlight);
+                layer.bindPopup(
+                    '<div class="popup">Regional Council: <b>' + 
+                    feature.properties.REGC2020_1 +
+                    '</b></div>');
+            }
+        }).addTo(map);     
+
+        // Intert list HTML
+        document.getElementById("statlist").innerHTML = html;
+        let info_list = document.getElementById("statlist");
+
+        // Interactive box containing the regional council names for selection
+        let selection = L.control({position: "bottomright"});
+        selection.onAdd = function() {
+            let div = L.DomUtil.create("div", "selection");
+            div.innerHTML = '<h3>Regional councils list</h3>' + info_list.innerHTML;
+
+                return div;
+                    };
+                    selection.addTo(map);
+
+        // Bind event listeners to list items
+        let el = document.querySelectorAll(".selection li");
+        for(let i = 0; i < el.length; i++) {
+                    el[i].addEventListener("mouseover", function(e) {
+                        let hovered_item = e.target;
+                        let hovered_id = hovered_item.id;
+                        hovered_item.classList.add("highlight");
+                        //geojson.getLayer(hovered_id).bringToFront().setStyle(highlightStyle);
+                        highlight_feature_list(geojson.getLayer(hovered_id))
+                    });
+                    el[i].addEventListener("mouseout", function(e) {
+                        let hovered_item = e.target;
+                        let hovered_id = hovered_item.id;
+                        reset_highlight_list(geojson.getLayer(hovered_id));
+                        hovered_item.classList.remove("highlight");
+                    });
+                } 
+            });
+    </script>
+</body>
+</html>
