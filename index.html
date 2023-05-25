@@ -225,7 +225,7 @@ description.onAdd = function() {
             description.addTo(map); 
 
 // Consume data through specific file  
-let path = "/data/geojson/nz_popbyregion2018_simplify4.geojson"
+let path = "data/geojson/nz_popbyregion2018_simplify4.geojson"
 fetch(path)
     .then(function(response) {
         return response.json();
